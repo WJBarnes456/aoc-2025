@@ -21,6 +21,7 @@ fn main() -> std::io::Result<()> {
     let day_impl: Box<dyn Puzzle> = match day.as_str() {
         "0" => Box::new(aoc::Day0),
         "1" => Box::new(aoc::Day1),
+        "2" => Box::new(aoc::Day2),
         default => panic!("day number {} is not yet implemented", default),
     };
     
