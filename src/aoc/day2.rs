@@ -37,38 +37,14 @@ fn is_duplicate_number(v: u64, part2: bool) -> bool {
     // to be lazy, can we just iterate over every possible number 
     let number_of_digits = v.ilog10() + 1;
     
-    for candidate in 2..=number_of_digits {
-        //println!("considering candidate factor {candidate} for {v}");
-        if is_duplicate_number_under_factor(v, candidate) {
-            return true;
-        }
-    }
-    return false;
-}
-
-fn duplicated_vals(start: u64, end: u64, part2: bool) -> Vec<u64> {
-    let mut vec = Vec::new();
-
-    println!("checking range {start}-{end}");
-
-    for i in start..=end {
-        //println!("checking if {} is a doubled number", i);
-        if is_duplicate_number(i, part2) {
-            //println!("{} is a doubled number", i);
-            vec.push(i);
-        }
-    }
-
-    return vec;
+    return (2..=number_of_digits).any(|candidate| is_duplicate_number_under_factor(v, candidate));
 }
 
 fn sum_vals_in_range(range: &str, part2: bool) -> u64 {
     let (start, end) = range.split_once('-') .unwrap();
-    return duplicated_vals(
-        start.parse::<u64>().unwrap(),
-        end.parse::<u64>().unwrap(),
-        part2,
-    ).into_iter().sum();
+    return ((start.parse::<u64>().unwrap())..(end.parse::<u64>().unwrap()))
+        .filter(|x: &u64| is_duplicate_number(*x, part2))
+        .sum();
 }
 
 impl Puzzle for Day2 {
