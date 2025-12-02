@@ -10,8 +10,7 @@ pub struct Day2;
 
 fn is_duplicate_number_under_factor(v: u64, factor: u32) -> bool {
     // doubled numbers need to have an even number of digits
-    // this f32 to i32 coercion is probably unsafe for general input but fine here
-    let number_of_digits = (v as f64).log10().floor() as u32 + 1;
+    let number_of_digits = v.ilog10() + 1;
     
     if number_of_digits % factor != 0 {
         return false;
@@ -36,7 +35,7 @@ fn is_duplicate_number(v: u64, part2: bool) -> bool {
 
     // otherwise, any factor of the digit count is a possibility
     // to be lazy, can we just iterate over every possible number 
-    let number_of_digits = (v as f32).log10().ceil() as u32 + 1;
+    let number_of_digits = v.ilog10() + 1;
     
     for candidate in 2..=number_of_digits {
         //println!("considering candidate factor {candidate} for {v}");
