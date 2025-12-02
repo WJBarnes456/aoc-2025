@@ -37,6 +37,28 @@ impl Puzzle for Day1 {
         return count.to_string();
     }
     fn part2(&self, input: &String) -> String {
-        return self.part1(input)
+        let mut count = 0;
+        let end_pos= input.split('\n') // convert to lines
+                    .map(|x| to_val(x.trim())) // convert each line into the corresponding offset
+                    .fold(50, |x, y| {
+                        // if the new value is a rotation of more than 100, then we can add those clicks already to reduce to the case where it's less than 100
+                        count += (y / 100).abs();
+
+                        let offset = y % 100;
+
+                        // then we only need to consider crossing 0 in either direction
+                        // we need to exclude x being 0 since we counted it on the way into 0
+                        if x!=0 && ((x+offset) <= 0 || (x+offset >= 100)) {
+                            println!("crossed 0 moving from {}: {}", x, y);
+                            count += 1;
+                        }
+
+                        // and return the next value
+                        return (x+y+100)%100;
+                    });
+        
+        println!("end_pos was {}", end_pos);
+
+        return count.to_string();
     }
 }
