@@ -42,19 +42,23 @@ impl Puzzle for Day1 {
                     .map(|x| to_val(x.trim())) // convert each line into the corresponding offset
                     .fold(50, |x, y| {
                         // if the new value is a rotation of more than 100, then we can add those clicks already to reduce to the case where it's less than 100
-                        count += (y / 100).abs();
-
+                        let hundred_change = (y / 100).abs();
+                        if hundred_change > 0 {
+                            count += hundred_change;
+                            println!("crossed 0 {} times in a move of {} from {} (total {})", hundred_change, y, x, count);
+                        }
+                        
                         let offset = y % 100;
 
-                        // then we only need to consider crossing 0 in either direction
-                        // we need to exclude x being 0 since we counted it on the way into 0
-                        if x!=0 && ((x+offset) <= 0 || (x+offset >= 100)) {
-                            println!("crossed 0 moving from {}: {}", x, y);
+                        if x != 0 && ((x + offset <= 0) || (x + offset >= 100)) {
                             count += 1;
+                            println!("crossed 0 moving from {}: {} (total {})", x, y, count);
                         }
 
                         // and return the next value
-                        return (x+y+100)%100;
+                        // I spent SO LONG on this being a buggy modulo where I was doing (x+y+100)%100 which doesn't work when y is greater than 100... 
+                        // I should have spotted this should have been offset (ended up debugging based on the endpos ending up negative for L200)
+                        return (x+offset+100)%100;
                     });
         
         println!("end_pos was {}", end_pos);
