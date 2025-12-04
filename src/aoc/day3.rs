@@ -1,40 +1,44 @@
-use std::collections::VecDeque;
-
 use crate::Puzzle;
 
 // Day3 implements day 23 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/3. 
 pub struct Day3;
 
-fn add_val(vec: &mut VecDeque<u32>, value: u32, top_n: u32) {
+fn add_val(vec: &mut Vec<u64>, value: u64, top_n: u32) {
     // if we don't already have the first n, add it
     if vec.len() < top_n.try_into().unwrap() {
-        vec.push_back(value);
+        vec.push(value);
         return;
     }
 
     // otherwise, consider whether it'd be more valuable to have this new value in the array
-    // two options: either we replace the last value with it (NB: we can't drop an intermediate value), or shift the whole array along, and we want to pick whichever would lead to a bigger value
-    let current_val = as_val(vec);
-    let replace_last_val = (current_val + value) - vec.back().unwrap();
-    let shift_along_val = (current_val - vec.front().unwrap() * 10_u32.pow(top_n - 1)) * 10 + value;
+    // we can drop any value in the array arbitrarily to get the largest value (not only first/last), which would shift every other element across
+    // so consider the value after dropping each element
+    let orig_val = as_val(vec);
+    let mut best_val = orig_val;
+    let mut best_index_to_drop: Option<usize> = None;
 
-    //println!("current val {current_val}. considering replacing_last (new val {replace_last_val}) or shifting along (new val {shift_along_val}) for {value} to {vec:?}");
-
-    // if neither change is an improvement, do nothing
-    if current_val >= replace_last_val && current_val >= shift_along_val {
-        return;
+    for i in 0..vec.len() {
+        let new_val = orig_val - as_val(&vec[i..]) + as_val(&vec[i+1..]) * 10 + value;
+        if new_val > best_val {
+            best_val = new_val;
+            best_index_to_drop = Some(i);
+        }
     }
-
-    // otherwise do whichever is more of an improvement, preferring replacing last since it's quicker
-    if replace_last_val >= shift_along_val {
-        *vec.back_mut() .unwrap() = value;
-    } else if shift_along_val > replace_last_val {
-        vec.pop_front();
-        vec.push_back(value);
+    
+    match best_index_to_drop {
+        None => return,
+        Some(x) => {
+            // we have a best index to drop, so actually drop it
+            let length = vec.len();
+            for i in x..length-1 {
+                vec[i] = vec[i+1];
+            }
+            vec[length - 1] = value;
+        }
     }
 }
 
-fn as_val(vec: &VecDeque<u32>) -> u32 {
+fn as_val(vec: &[u64]) -> u64 {
     let mut base = 0;
     for i in vec {
         base = base * 10 + i;
@@ -42,12 +46,12 @@ fn as_val(vec: &VecDeque<u32>) -> u32 {
     return base;
 }
 
-fn bank_joltage(line: &str, top_n: u32) -> u32 {
-    let mut top_n_vals: VecDeque<u32> = VecDeque::new();
+fn bank_joltage(line: &str, top_n: u32) -> u64 {
+    let mut top_n_vals: Vec<u64> = Vec::new();
     
     // convert to ints and try and add each to the top_n array
     let char_count = line.chars()
-                                .map(|x| add_val(&mut top_n_vals, x.to_digit(10).unwrap(), top_n))
+                                .map(|x| add_val(&mut top_n_vals, x.to_digit(10).unwrap().into(), top_n))
                                 .count();
     
     println!("processed a line with {char_count} elements");
@@ -61,11 +65,14 @@ impl Puzzle for Day3 {
     fn part1(&self, input: &String) -> String {
         return input.split('\n')
                     .map(|line| bank_joltage(line.trim(), 2))
-                    .sum::<u32>()
+                    .sum::<u64>()
                     .to_string()
     }
     fn part2(&self, input: &String) -> String {
-        return "".to_string();
+        return input.split('\n')
+                    .map(|line| bank_joltage(line.trim(), 12))
+                    .sum::<u64>()
+                    .to_string()
     }
 }
 
