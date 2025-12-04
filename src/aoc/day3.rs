@@ -53,6 +53,11 @@ fn as_val(vec: &[u64]) -> u64 {
 }
 
 fn bank_joltage(line: &str, top_n: u32) -> u64 {
+    // NB: this doesn't actually need to be a Vec, we could use a fixed-length
+    // array of size top_n instead to avoid heap allocation 
+    // I'm currently writing lots of Go where the only thing you get is the
+    // growable slice type and the underlying array size is mostly abstracted
+    // away
     let mut top_n_vals: Vec<u64> = Vec::new();
     
     // convert to ints and try and add each to the top_n array
