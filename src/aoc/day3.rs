@@ -18,6 +18,12 @@ fn add_val(vec: &mut Vec<u64>, value: u64, top_n: u32) {
     let mut best_index_to_drop: Option<usize> = None;
 
     for i in 0..vec.len() {
+        // NB: this is quadratic in top_n (we consider every position in the
+        // vector and compute the value of the whole array after that point to
+        // get the true value), we could precompute partial sums from the end of
+        // the array instead to make it linear in top_n
+        //
+        // this is fast enough for top_n=12 but we can definitely go faster
         let new_val = orig_val - as_val(&vec[i..]) + as_val(&vec[i+1..]) * 10 + value;
         if new_val > best_val {
             best_val = new_val;
