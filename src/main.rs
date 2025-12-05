@@ -24,6 +24,7 @@ fn main() -> std::io::Result<()> {
         "2" => Box::new(aoc::Day2),
         "3" => Box::new(aoc::Day3),
         "4" => Box::new(aoc::Day4),
+        "5" => Box::new(aoc::Day5),
         default => panic!("day number {} is not yet implemented", default),
     };
     
