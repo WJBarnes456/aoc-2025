@@ -24,6 +24,14 @@ fn process_input(input: &String) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
     return (starts, ends, available);
 }
 
+// overlap checks if there is any overlap between ranges X (x1, x2) and Y (y1, y2)
+// the possibilities (same as the booleans) are that X starts within Y, X ends within Y
+// Y starts within X, or Y ends within
+fn overlap(x1: usize, x2: usize, y1: usize, y2: usize) -> bool {
+    return ((y1 <= x1) && (x1 <= y2)) || ((y1 <= x2) && (x2 <= y2)) ||
+           ((x1 <= y1) && (y1 <= x2)) || ((x1 <= y2) && (y2 <= x2));
+}
+
 // add_to_ranges adds a new range to the ranges that already exist
 // we maintain this list in sorted order since adding a new range might cause 2 other ranges to merge together
 // e.g. consider we have ranges 1-2 and 4-5. if we insert range 3-3 this becomes a single range 1-5
@@ -35,14 +43,14 @@ fn add_to_ranges(ranges: &mut Vec<(usize, usize)>, new_start_p: &usize, new_end_
         let (existing_start, existing_end) = ranges[i];
         // cases
         // no overlap, too early - new_end < existing_start - when we encounter this for the first time, this is a new value! so we need to push it into the array at this point
-        if (new_end < existing_start) {
+        if new_end < existing_start {
             ranges.insert(i, (new_start, new_end));
             return;
         }
 
         // some overlap - existing_start <= new_end <= existing_end or existing_start <= new_start <= existing_end.
         // in this case, we have a new range we want to insert - it's inefficient, but correct, to remove the old range, and try and insert this new one instead
-        if ((existing_start <= new_start) && (new_start <= existing_end)) || ((existing_start <= new_end) && (new_end <= existing_end)) {
+        if overlap(new_start, new_end, existing_start, existing_end) {
             ranges.remove(i);
             add_to_ranges(ranges, &min(existing_start, new_start), &max(existing_end, new_end));
             return;
@@ -80,10 +88,6 @@ impl Puzzle for Day5 {
             .count();
 
         println!("added {range_count} ranges to ranges");
-
-        for (start, end) in ranges.iter() {
-            println!("range: ({start}, {end}), size {}", end - start + 1);
-        }
 
         return ranges.iter().map(|(start, end)| end - start + 1).sum::<usize>().to_string();
     }
