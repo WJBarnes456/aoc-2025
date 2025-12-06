@@ -5,7 +5,7 @@ use crate::Puzzle;
 // Day6 implements day 6 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/6. 
 pub struct Day6;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 enum Operation {
     Add,
     Multiply,
@@ -47,41 +47,48 @@ fn parse_line(line: &str) -> Row {
 }
 
 // map_input maps from cephalopod math to natural math 
-fn map_input(input: &str) -> Vec<String> {
+fn map_input(input: &str) -> Vec<(Vec<usize>, Operation)> {
     let mut lines = input.lines().collect::<Vec<&str>>();
 
     // the last line should be all the operations, so pop it off
-    let last_line = lines.pop().unwrap().to_string();
+    let ops = match parse_line(lines.pop().unwrap()) {
+        Row::Ops(o) => o,
+        _ => panic!("final row was not ops"),
+    };
     
     // we shouldn't need to read the whole input into an array, this is wasteful, but easier to write
     let mut line_iters: Vec<std::str::Chars<'_>> = lines.iter().map(|line| line.chars()).collect();
-    let mut new_lines: Vec<String> = Vec::new();
     
-    let new_line = &mut "".to_string();
+    let mut problems = Vec::new();
+    let mut problem = Vec::new();
     let mut non_space = false;
     loop {
+        let mut new_val = "".to_string();
         for j in 0..lines.len() {
             match line_iters[j].nth_back(0) {
-                // None => we exhausted the rows, so return it
-                None => return new_lines.into_iter().chain(once(last_line)).collect::<Vec<String>>(),
+                // None => we exhausted the rows, so return the problem
+                // we parsed the problems in reverse, so we need to reverse ops too
+                None => {
+                    problems.push(problem.clone());
+                    return problems.into_iter().zip(ops.into_iter().rev()).collect();
+                },
                 // a space - not interesting
                 Some(' ') => continue,
                 Some(c) => {
                     non_space = true;
-                    new_line.push(c);
+                    new_val.push(c);
                 }
             }
         }
 
-        // this was a value other than all spaces, so add a space and continue for the next one
+        // this was a value other than all spaces, so it's a new value for the problem 
         if non_space {
-            new_line.push(' ');
+            problem.push(new_val.parse::<usize>().unwrap());
             non_space = false;
         } else {
-            // this _was_ all spaces, so we hit the end of the line
-            println!("outputting new line {new_line}");
-            new_lines.push(new_line.to_string());
-            new_line.clear();
+            // this _was_ all spaces, so we hit the end of this problem
+            problems.push(problem.clone());
+            problem.clear();
         }
     } 
 
@@ -135,7 +142,8 @@ impl Puzzle for Day6 {
         }).sum::<usize>().to_string();
     }
     fn part2(&self, input: &String) -> String {
-        return parse_input(map_input(input).into_iter()).into_iter().map(|(vals, op)| {
+        return map_input(input).into_iter().map(|(vals, op)| {
+            println!("evaluating {vals:?} under {op:?}");
             match op {
                 Operation::Add => vals.iter().sum::<usize>(),
                 Operation::Multiply => vals.iter().product(),
