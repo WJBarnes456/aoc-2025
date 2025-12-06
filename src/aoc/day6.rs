@@ -1,25 +1,23 @@
-use std::ptr::null;
-
 use crate::Puzzle;
 
 // Day6 implements day 6 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/6. 
 pub struct Day6;
 
 #[derive(Clone, Copy)]
-enum OperationKind {
+enum Operation {
     Add,
     Multiply,
 }
 
 enum Row {
     Vals(Vec<usize>),
-    Ops(Vec<OperationKind>),
+    Ops(Vec<Operation>),
 }
 
-fn parse_op(v: char) -> Option<OperationKind> {
+fn parse_op(v: char) -> Option<Operation> {
     match v {
-        '*' => Some(OperationKind::Multiply),
-        '+' => Some(OperationKind::Add),
+        '*' => Some(Operation::Multiply),
+        '+' => Some(Operation::Add),
         _ => None,
     }
 }
@@ -31,12 +29,12 @@ fn parse_line(line: &str) -> Row {
     let mut ops = Vec::new();
 
     vals_or_ops.map(|v: &str| {
-        match (parse_op(v[0])) {
+        match parse_op(v.chars().nth(0).unwrap()) {
             Some(op) => ops.push(op),
             // we deliberately expect this unwrap to error if it's not an op or a val
             None => vals.push(v.parse::<usize>().unwrap()),
         }    
-    })
+    }).count();
 
     match (vals.len(), ops.len()) {
         (0, 0) => panic!("received empty line"),
@@ -46,7 +44,7 @@ fn parse_line(line: &str) -> Row {
     }
 }
 
-fn parse_input(input: &str) -> Vec<(Vec<usize>, OperationKind)> {
+fn parse_input(input: &str) -> Vec<(Vec<usize>, Operation)> {
     let mut problem_vals: Vec<Vec<usize>> = Vec::new();
 
     let mut problem_ops = None;
@@ -74,23 +72,21 @@ fn parse_input(input: &str) -> Vec<(Vec<usize>, OperationKind)> {
         panic!("input had no operations row");
     }
 
-    let mut out: Vec<(Vec<usize>, OperationKind)> = Vec::new();
-    // this feels like it should be implementable as a collect but isn't because
-    // I'll need to do a bit more reasoning about how we can transfer these values out, for now it's fast enough to just clone at the end here
-    // we could sidestep this but be less ergonomic if we just returned problem_vals and problem_ops instead and let the user zip them together
-    for (vals, op) in problem_vals.iter().zip(problem_ops.unwrap().iter()) {
-        out.push((vals.clone(), *op));
-    }
-
-    return out;
+    // zip each set of vals with its corresponding op, and return that
+    return problem_vals.into_iter().zip(
+        problem_ops.unwrap().into_iter()
+    ).collect();
 
 }
 
 impl Puzzle for Day6 {
     fn part1(&self, input: &String) -> String {
         return parse_input(input).into_iter().map(|(vals, op)| {
-
-        }).sum();
+            match op {
+                Operation::Add => vals.iter().sum::<usize>(),
+                Operation::Multiply => vals.iter().product(),
+            }
+        }).sum::<usize>().to_string();
     }
     fn part2(&self, input: &String) -> String {
         return input.chars().take(10).collect::<String>();
