@@ -1,3 +1,5 @@
+use std::iter::once;
+
 use crate::Puzzle;
 
 // Day6 implements day 6 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/6. 
@@ -38,17 +40,61 @@ fn parse_line(line: &str) -> Row {
 
     match (vals.len(), ops.len()) {
         (0, 0) => panic!("received empty line"),
-        (0, l) => Row::Ops(ops),
-        (l, 0) => Row::Vals(vals),
+        (0, _l) => Row::Ops(ops),
+        (_l, 0) => Row::Vals(vals),
         (l_v, l_o) => panic!("invalid line contained both {l_v} vals and {l_o} ops"),
     }
 }
 
-fn parse_input(input: &str) -> Vec<(Vec<usize>, Operation)> {
+// map_input maps from cephalopod math to natural math 
+fn map_input(input: &str) -> Vec<String> {
+    let mut lines = input.lines().collect::<Vec<&str>>();
+
+    // the last line should be all the operations, so pop it off
+    let last_line = lines.pop().unwrap().to_string();
+    
+    // we shouldn't need to read the whole input into an array, this is wasteful, but easier to write
+    let mut line_iters: Vec<std::str::Chars<'_>> = lines.iter().map(|line| line.chars()).collect();
+    let mut new_lines: Vec<String> = Vec::new();
+    
+    let new_line = &mut "".to_string();
+    let mut non_space = false;
+    loop {
+        for j in 0..lines.len() {
+            match line_iters[j].nth_back(0) {
+                // None => we exhausted the rows, so return it
+                None => return new_lines.into_iter().chain(once(last_line)).collect::<Vec<String>>(),
+                // a space - not interesting
+                Some(' ') => continue,
+                Some(c) => {
+                    non_space = true;
+                    new_line.push(c);
+                }
+            }
+        }
+
+        // this was a value other than all spaces, so add a space and continue for the next one
+        if non_space {
+            new_line.push(' ');
+            non_space = false;
+        } else {
+            // this _was_ all spaces, so we hit the end of the line
+            println!("outputting new line {new_line}");
+            new_lines.push(new_line.to_string());
+            new_line.clear();
+        }
+    } 
+
+
+}
+
+fn parse_input<'a, I>(lines: I) -> Vec<(Vec<usize>, Operation)>
+where I : Iterator<Item = String> {
     let mut problem_vals: Vec<Vec<usize>> = Vec::new();
 
     let mut problem_ops = None;
-    for row in input.lines().map(|x| parse_line(x.trim())) {
+
+    for row in lines.map(|x| parse_line(x.trim())) {
         match row {
             Row::Vals(vals) => {
                 // if this is the first row, we need to initialise the vals for each row
@@ -81,7 +127,7 @@ fn parse_input(input: &str) -> Vec<(Vec<usize>, Operation)> {
 
 impl Puzzle for Day6 {
     fn part1(&self, input: &String) -> String {
-        return parse_input(input).into_iter().map(|(vals, op)| {
+        return parse_input(input.lines().map(|x| x.to_string())).into_iter().map(|(vals, op)| {
             match op {
                 Operation::Add => vals.iter().sum::<usize>(),
                 Operation::Multiply => vals.iter().product(),
@@ -89,7 +135,12 @@ impl Puzzle for Day6 {
         }).sum::<usize>().to_string();
     }
     fn part2(&self, input: &String) -> String {
-        return input.chars().take(10).collect::<String>();
+        return parse_input(map_input(input).into_iter()).into_iter().map(|(vals, op)| {
+            match op {
+                Operation::Add => vals.iter().sum::<usize>(),
+                Operation::Multiply => vals.iter().product(),
+            }
+        }).sum::<usize>().to_string();
     }
 }
 
