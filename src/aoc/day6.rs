@@ -1,5 +1,3 @@
-use std::iter::once;
-
 use crate::Puzzle;
 
 // Day6 implements day 6 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/6. 
