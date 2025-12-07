@@ -1,6 +1,6 @@
 use crate::Puzzle;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 // Day7 implements day 7 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/7. 
 pub struct Day7;
@@ -42,6 +42,29 @@ impl Puzzle for Day7 {
         return total_splits.to_string();
     }
     fn part2(&self, input: &String) -> String {
-        return input.chars().take(10).collect::<String>();
+        let mut lines = input.lines();
+        let first_pos = lines.next().unwrap().chars().position(|x| x == 'S').unwrap();
+        let mut positions = HashMap::<usize, usize>::new();
+        positions.insert(first_pos, 1);
+
+        for (y, line) in lines.enumerate() {
+            let splitter_indices = line.chars().enumerate().filter(|(_, c)| *c == '^').map(|(i, _)| i);
+            for i in splitter_indices {
+                // if there is a beam at the specified position, then remove it and add the new positions
+                match positions.remove(&i) {
+                    None => continue,
+                    Some(v) => {
+                        // it may have already been possible to get to either of the neighbouring positions, so we need to attempt to pull out and update the neighbouring values
+                        positions.insert(i-1, positions.get(&(i-1)).unwrap_or(&0) + v);
+                        positions.insert(i+1, positions.get(&(i+1)).unwrap_or(&0) + v);
+                    }
+                }
+            }
+
+            println!("beam positions at y={y}: {positions:?}");
+        }
+
+        // the number of different timelines total is the sum of the number of timelines that can get to each position
+        return positions.iter().map(|(_,v)| v).sum::<usize>().to_string();
     }
 }
