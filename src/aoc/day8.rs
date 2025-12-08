@@ -1,8 +1,7 @@
 use crate::Puzzle;
 use typenum;
 use kd_tree::{KdTree};
-use std::collections::{HashMap, HashSet};
-use std::rc::Rc;
+use std::collections::{HashSet};
 
 // Day8 implements day 8 of AoC 2025, as uploaded at https://adventofcode.com/2025/day/8. 
 pub struct Day8;
@@ -18,6 +17,7 @@ pub struct Day8;
 // we could also partition space e.g. group all of 0-500, 500-1000 (x,y,z), then each closest pair we'd only need to consider within each square and its 26 neighbours
 // - https://en.wikipedia.org/wiki/K-d_tree#Nearest_neighbour_search ah k-d trees ring a bell, guess it's a good point
 //   I'm sure I'd learn a lot from implementing this from scratch but when there's a crate just there... I may as well learn from just the code anyway.
+// (I'm very glad I did this, it took a couple of hours to solve this one)
 #[derive(Clone, Copy)]
 struct Point {
     i: usize,
@@ -27,13 +27,14 @@ struct Point {
 }
 
 impl kd_tree::KdPoint for Point {
-    type Scalar = usize;
+    // I would use usize here but the kd-tree library I'm using doesn't handle unsigned integer subtraction so underflows and panics
+    type Scalar = isize;
     type Dim = typenum::U3;
-    fn at(&self, k: usize) -> usize {
+    fn at(&self, k: usize) -> isize {
         match k {
-            0 => self.x,
-            1 => self.y,
-            2 => self.z,
+            0 => self.x.try_into().unwrap(),
+            1 => self.y.try_into().unwrap(),
+            2 => self.z.try_into().unwrap(),
             _ => panic!("attempted to access dimension {k} of 3D point"),
         }
     }
@@ -82,7 +83,7 @@ fn square_distance(p1: Point, p2: Point) -> usize {
 struct PointDist {
     i_point_a: usize,
     i_point_b: usize,
-    dist: usize, // actually the squared distance but this is way easier to type
+    dist: isize, // actually the squared distance but this is way easier to type
 }
 
 fn initialise_circuits(length: usize) -> Vec::<HashSet<usize>> {
@@ -97,9 +98,9 @@ fn initialise_circuits(length: usize) -> Vec::<HashSet<usize>> {
     return circuits
 }
 
-// n is 0-indexed, i.e. 0 returns the 
-// e.g. n=0 returns the second closest point in the tree (since the closest one is always that same point)
+// n is 0-indexed, i.e. 0 returns the closest point, 1 returns the next closest point 
 fn nth_closest(tree: &KdTree<Point>, point: &Point, n: usize) -> PointDist {
+    // n=0 actually returns the second closest point in the tree (since the closest one is always that same point)
     let nearest = tree.nearests(point, n + 2)[n+1];
     return PointDist{
         i_point_a: point.i,
@@ -108,8 +109,24 @@ fn nth_closest(tree: &KdTree<Point>, point: &Point, n: usize) -> PointDist {
     }
 }
 
+fn insert_next(tree: &KdTree<Point>, distances: &mut Vec<PointDist>, point: &Point, n: usize) {
+    // get the next closest point...
+    let next_point = nth_closest(tree, point, n);
+
+    // and insert it at the correct place in the array. it's ordered with smallest last, so we need to iterate over the array from the end
+    for i in distances.len()-1..=0 {
+        if distances[i].dist > next_point.dist {
+            // we hit the last value in the array further away than the current one, so insert one index after this
+            distances.insert(i+1, next_point);
+        }
+    }
+    
+    // we hit the start of the array and no value was greater than ours. we need to push to the front
+    distances.insert(0, next_point);
+}
+
 fn part1(tree: KdTree<Point>) -> usize {
-    let points = tree.iter().map(|x| *x).collect::<Vec<Point>>(); 
+    let points = tree.iter().map(|x| *x).collect::<Vec<Point>>();
     // unfortunately the library I'm using doesn't support deleting points from a tree once it's already constructed
     // however we can use a cheeky workaround which isn't the most efficient, but is more than good enough
     //
@@ -117,17 +134,13 @@ fn part1(tree: KdTree<Point>) -> usize {
     // i.e. we need two vecs, one of the current index of the nth neighbour, and one with the current nth neighbour point
     // then we also need to keep track of the circuits - easiest way of doing this is going to be having a map of points to the circuits they belong to as a pointer to a set
     // nb. indices must start at 1 because every point's closest point is otherwise itself. I don't think this even assumes there are no duplicates.
-    let mut indices = tree.iter().map(|_| 0_usize).collect::<Vec<usize>>();
-    let mut distances = Vec::<PointDist>::new();
+    let mut position_map = tree.iter().map(|_| 0_usize).collect::<Vec<usize>>();
+    let mut distances = tree.iter().map(|point| nth_closest(&tree, point, 0)).collect::<Vec<PointDist>>(); 
     
-    for point in points {
-        distances.push(nth_closest(&tree, &point, 0));
-    }
-
     let mut circuits = initialise_circuits(tree.len());
     let mut circuit_map = circuits.iter().enumerate().map(|(i, _)| i).collect::<Vec<usize>>();
     // we now have:
-    // indices: a vec of "1" (i.e. the index of the next closest non-self position) for each position in the tree
+    // position_map: a vec of "0" (i.e. the index of the next closest non-self position) for each position in the tree
     // distances: a vec of the index of the point (i.e. the point's i value) together with the distance to its next closest not-yet-added point, and its next closest not-yet-added point
     // circuits: a vec which contains the circuit for each point (as a lookup from point index to a pointer to the set containing it). at the moment this is just {i} for each index i
     // circuit_map: a map of the point index to the circuit index. this is the map we update when we combine circuits together. at the moment this is just i for each index i
@@ -154,9 +167,12 @@ fn part1(tree: KdTree<Point>) -> usize {
         let i_a = first.i_point_a;
         let i_b = first.i_point_b;
 
-        // we want to fetch the next 
-        indices[i_a] += 1;
-        indices[i_b] += 1;
+        // now fetch and insert the next closest point for each of the two 
+        position_map[i_a] += 1;
+        position_map[i_b] += 1;
+
+        insert_next(&tree, &mut distances, &points[i_a], position_map[i_a]);
+        insert_next(&tree, &mut distances, &points[i_b], position_map[i_b]);
 
         let c_i_a = circuit_map[i_a];
         let c_i_b = circuit_map[i_b];
