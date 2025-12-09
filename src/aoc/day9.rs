@@ -6,7 +6,14 @@ pub struct Day9;
 
 // after really overcomplicating yesterday I'm going to keep it simple today. Thanks to Wyn for the inspiration on using itertools for this, that combinations function is lush.
 // I'm not even sure what structure would allow you to do a clever thing here - the area between two points is not a metric (exhibit e.g. a triangle, the area between each pair of points is low other than the hypotenuse)
-
+//
+// part 2 is interesting - we really need a fast way of checking whether a rectangle is valid or not
+// we could store all the valid locations in the space, but that seems very wasteful. recomputing it on each pass is also wasteful, however
+// do we want to go back to the start on it? we can traverse the set of points and solve this by finding each area bounded by the set of points
+// we know that any line is always valid, though combining any pair is tricky...
+// I think I might just leave this one. it feels much more like an algorithmic trick than anything where I'll be able to develop my Rust by solving it, unfortunately.
+// (I suspect there is going to be something in iterating around the outside of the shape and checking if any tile in the square sits outside of it)
+// nb. the shape will always be convex since we draw a single line. that might be something we can use.
 #[derive(Clone, Copy, Debug)]
 struct RedTile {
     x: usize,
