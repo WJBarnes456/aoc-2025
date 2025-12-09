@@ -113,7 +113,7 @@ fn insert_next(tree: &KdTree<Point>, distances: &mut Vec<PointDist>, point: &Poi
     // get the next closest point...
     let next_point = nth_closest(tree, point, n);
 
-    println!("inserting new distance {next_point:?}");
+    //println!("inserting new distance {next_point:?}");
 
     // and insert it at the correct place in the array. it's ordered with smallest last, so we need to iterate over the array from the end
     for i in (0..distances.len()).rev() {
@@ -156,7 +156,7 @@ fn part1(tree: KdTree<Point>, points: Vec<Point>) -> usize {
     
     // comparing b to a gives reversed (descending) order
     distances.sort_by(|a, b| b.dist.cmp(&a.dist));
-    println!("distances: {:?}", distances);
+    //println!("distances: {:?}", distances);
     for _ in 0..1000 {
         // cheeky trick assuming that there are no ties: we should be able to pop two points and get two that point to one another
         let first = distances.pop().unwrap();
@@ -170,7 +170,7 @@ fn part1(tree: KdTree<Point>, points: Vec<Point>) -> usize {
         let i_a = first.i_point_a;
         let i_b = first.i_point_b;
         
-        println!("pairing {:?} with {:?} with distance {}", points[i_a], points[i_b], first.dist);
+        //println!("pairing {:?} with {:?} with distance {}", points[i_a], points[i_b], first.dist);
 
         // now fetch and insert the next closest point for each of the two 
         position_map[i_a] += 1;
@@ -210,6 +210,7 @@ fn part1(tree: KdTree<Point>, points: Vec<Point>) -> usize {
         // if I were writing C this is where I'd free the old circuit
     }
 
+
     // we now have some number of sets, and we want the three largest ones
     // all of the ones which are no longer connected are now empty, so they will have length 0
     let mut circuit_sizes = circuits.iter().map(|s| s.len()).collect::<Vec<usize>>();
@@ -247,7 +248,7 @@ fn part2(tree: KdTree<Point>, points: Vec<Point>) -> usize {
     
     // comparing b to a gives reversed (descending) order
     distances.sort_by(|a, b| b.dist.cmp(&a.dist));
-    println!("distances: {:?}", distances);
+    //println!("distances: {:?}", distances);
 
     let mut point_a: Option<Point> = None;
     let mut point_b: Option<Point> = None;
@@ -264,7 +265,7 @@ fn part2(tree: KdTree<Point>, points: Vec<Point>) -> usize {
         let i_a = first.i_point_a;
         let i_b = first.i_point_b;
         
-        println!("pairing {:?} with {:?} with distance {}", points[i_a], points[i_b], first.dist);
+        //println!("pairing {:?} with {:?} with distance {}", points[i_a], points[i_b], first.dist);
 
         // now fetch and insert the next closest point for each of the two 
         position_map[i_a] += 1;
@@ -307,6 +308,8 @@ fn part2(tree: KdTree<Point>, points: Vec<Point>) -> usize {
 
         // if I were writing C this is where I'd free the old circuit
     }
+    
+    println!("largest index was {}", position_map.iter().max().unwrap());
 
     // we now have our one big circuit, and we were keeping track of our last selected point. so just return the two x coords
     return match (point_a, point_b) {
